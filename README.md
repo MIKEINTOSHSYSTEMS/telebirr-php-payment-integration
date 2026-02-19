@@ -1,4 +1,7 @@
-# 🇪🇹 Telebirr C2B Web Payment Integration for PHP
+<div align="center">
+  <img src="public/assets/images/telebirr.svg" alt="Telebirr Logo" width="250" height="auto"/>
+  <h1>Telebirr C2B Web Payment Integration for PHP</h1>
+</div>
 
 [![PHP Version](https://img.shields.io/badge/php-7.4%2B-blue.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)

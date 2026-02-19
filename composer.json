@@ -1,26 +1,58 @@
 {
-    "name": "telebirr/php-payment-integration",
-    "description": "Comprehensive Telebirr C2B Web Payment Integration for PHP",
+    "name": "mikeintosh/telebirr-php-payment-integration",
+    "description": "Complete Telebirr C2B Web Payment Integration for PHP - Production Ready, Developer Friendly",
     "type": "library",
+    "keywords": [
+        "telebirr",
+        "payment-gateway",
+        "ethiopia",
+        "mobile-money",
+        "c2b",
+        "payment-integration"
+    ],
+    "homepage": "https://mikeintoshs.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michael Kifle Teferra",
+            "email": "mikeintoshsys@gmail.com",
+            "homepage": "https://mikeintoshs.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "mikeintoshsys@gmail.com",
+        "issues": "https://github.com/MIKEINTOSHSYSTEMS/telebirr-php-payment-integration/issues",
+        "source": "https://github.com/MIKEINTOSHSYSTEMS/telebirr-php-payment-integration"
+    },
     "require": {
         "php": ">=7.4",
         "ext-curl": "*",
         "ext-json": "*",
         "ext-openssl": "*",
+        "ext-pdo": "*",
         "vlucas/phpdotenv": "^5.5",
         "monolog/monolog": "^2.9",
         "phpseclib/phpseclib": "^3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
     },
     "autoload": {
         "psr-4": {
             "Telebirr\\": "src/"
         }
     },
-    "authors": [
-        {
-            "name": "Michael Kifle Teferra",
-            "email": "mikeintoshsys@gmail.com"
+    "autoload-dev": {
+        "psr-4": {
+            "Telebirr\\Tests\\": "tests/"
         }
-    ],
-    "minimum-stability": "stable"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    }
 }

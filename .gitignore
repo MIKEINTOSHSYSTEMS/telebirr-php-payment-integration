@@ -1,0 +1,13 @@
+*.code-workspace
+*.log
+*.txt
+.env
+apps/
+logs/
+notes/
+vendor/
+config/keys/
+composer.lock
+telebirr.md
+public/d.php
+public/i.php

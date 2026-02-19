@@ -424,6 +424,7 @@
     // ===========================================
     // Theme Toggle
     // ===========================================
+        /*   
     function initializeThemeToggle() {
         const themeToggle = document.getElementById('themeToggle');
         if (themeToggle) {
@@ -438,7 +439,8 @@
             });
         }
     }
-
+        */
+    
     // ===========================================
     // Animations
     // ===========================================

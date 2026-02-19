@@ -58,10 +58,11 @@ return [
         'payee_identifier_type' => '04',
         'payee_type' => '5000',
     ],
-    
+
     // Logging
     'logging' => [
         'path' => __DIR__ . '/../' . $_ENV['LOG_PATH'],
         'level' => $_ENV['LOG_LEVEL'],
+        'retention_days' => $_ENV['LOG_RETENTION_DAYS'] ?? 30,
     ],
 ];

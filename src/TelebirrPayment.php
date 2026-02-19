@@ -105,7 +105,14 @@ class TelebirrPayment
             $this->db
         );
     }
-    
+    /* For reflection but we are not going to use it for removing deprciated setAccessible() on clean-logs.php*/
+        /*  
+    public function getApiLogger()
+    {
+        return $this->apiLogger;
+    }   
+        */
+
     /**
      * Initialize logger
      */
@@ -397,4 +404,144 @@ class TelebirrPayment
             error_log("[Telebirr][$level] $message");
         }
     }
+
+    /**
+     * Get API logs from database with pagination and filters
+     * 
+     * @param int $page
+     * @param int $perPage
+     * @param array $filters
+     * @return array
+     */
+    public function getApiLogs($page = 1, $perPage = 50, $filters = [])
+    {
+        if (!$this->db) {
+            return ['success' => false, 'error' => 'Database not available', 'data' => []];
+        }
+
+        try {
+            $offset = ($page - 1) * $perPage;
+
+            $where = [];
+            $params = [];
+
+            if (!empty($filters['endpoint'])) {
+                $where[] = "endpoint LIKE :endpoint";
+                $params[':endpoint'] = '%' . $filters['endpoint'] . '%';
+            }
+
+            if (!empty($filters['method'])) {
+                $where[] = "method = :method";
+                $params[':method'] = $filters['method'];
+            }
+
+            if (!empty($filters['status_code'])) {
+                $where[] = "status_code = :status_code";
+                $params[':status_code'] = $filters['status_code'];
+            }
+
+            if (!empty($filters['date_from'])) {
+                $where[] = "created_at >= :date_from";
+                $params[':date_from'] = $filters['date_from'];
+            }
+
+            if (!empty($filters['date_to'])) {
+                $where[] = "created_at <= :date_to";
+                $params[':date_to'] = $filters['date_to'];
+            }
+
+            if (!empty($filters['search'])) {
+                $where[] = "(request_data LIKE :search OR response_data LIKE :search)";
+                $params[':search'] = '%' . $filters['search'] . '%';
+            }
+
+            $whereClause = empty($where) ? "" : "WHERE " . implode(" AND ", $where);
+
+            // Get total count
+            $countSql = "SELECT COUNT(*) as total FROM api_logs $whereClause";
+            $countStmt = $this->db->prepare($countSql);
+            $countStmt->execute($params);
+            $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Get logs
+            $sql = "SELECT * FROM api_logs $whereClause ORDER BY created_at DESC LIMIT :offset, :perPage";
+            $stmt = $this->db->prepare($sql);
+
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':perPage', $perPage, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $logs,
+                'pagination' => [
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'total_pages' => ceil($total / $perPage)
+                ]
+            ];
+        } catch (\Exception $e) {
+            $this->log("Failed to get API logs: " . $e->getMessage(), 'ERROR');
+            return ['success' => false, 'error' => $e->getMessage(), 'data' => []];
+        }
+    }
+
+    /**
+     * Get log statistics for dashboard
+     * 
+     * @return array
+     */
+    public function getLogStats()
+    {
+        if (!$this->db) {
+            return ['success' => false, 'error' => 'Database not available'];
+        }
+
+        try {
+            // Total count
+            $totalStmt = $this->db->query("SELECT COUNT(*) as total FROM api_logs");
+            $total = $totalStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Success count (status 2xx)
+            $successStmt = $this->db->query("SELECT COUNT(*) as total FROM api_logs WHERE status_code BETWEEN 200 AND 299");
+            $success = $successStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Error count (status >= 400)
+            $errorStmt = $this->db->query("SELECT COUNT(*) as total FROM api_logs WHERE status_code >= 400");
+            $error = $errorStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Unique endpoints
+            $endpointsStmt = $this->db->query("SELECT COUNT(DISTINCT endpoint) as total FROM api_logs");
+            $endpoints = $endpointsStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Unique methods
+            $methodsStmt = $this->db->query("SELECT DISTINCT method FROM api_logs WHERE method IS NOT NULL ORDER BY method");
+            $methods = $methodsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            // Status codes distribution
+            $statusStmt = $this->db->query("SELECT status_code, COUNT(*) as count FROM api_logs GROUP BY status_code ORDER BY status_code");
+            $statusCodes = $statusStmt->fetchAll(PDO::FETCH_COLUMN, 0);
+
+            return [
+                'success' => true,
+                'total' => $total,
+                'success_count' => $success,
+                'error_count' => $error,
+                'unique_endpoints' => $endpoints,
+                'methods' => $methods,
+                'status_codes' => $statusCodes
+            ];
+        } catch (\Exception $e) {
+            $this->log("Failed to get log stats: " . $e->getMessage(), 'ERROR');
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
 }

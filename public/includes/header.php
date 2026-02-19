@@ -32,15 +32,22 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <!-- CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Dark Mode Preference -->
+    <!-- Theme initialization - runs before page renders to prevent flash -->
     <script>
-        // Check for saved theme preference or use system preference
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
+        (function() {
+            // Check for saved theme preference or use system preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                // Check system preference
+                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', systemPrefersDark ? 'dark' : 'light');
+                localStorage.setItem('theme', systemPrefersDark ? 'dark' : 'light');
+            }
+        })();
     </script>
 </head>
 
@@ -69,7 +76,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
                             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                         </svg>
-                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
                     </button>
@@ -81,6 +88,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <li><a href="demo.php" class="<?php echo $current_page == 'demo.php' ? 'active' : ''; ?>">Make Payment</a></li>
                             <li><a href="query-order.php" class="<?php echo $current_page == 'query-order.php' ? 'active' : ''; ?>">Query</a></li>
                             <li><a href="refund-order.php" class="<?php echo $current_page == 'refund-order.php' ? 'active' : ''; ?>">Refund</a></li>
+                            <li><a href="logs.php" class="<?php echo $current_page == 'logs.php' ? 'active' : ''; ?>">Logs</a></li>
                         </ul>
                     </nav>
                 </div>

@@ -30,14 +30,15 @@ $current_year = date('Y');
                     <li><a href="demo.php">Make Payment</a></li>
                     <li><a href="query-order.php">Query Order</a></li>
                     <li><a href="refund-order.php">Process Refund</a></li>
+                    <li><a href="logs.php">View Logs</a></li>
                 </ul>
             </div>
 
             <div class="footer-section">
                 <h4>Resources</h4>
                 <ul>
-                    <li><a href="#" onclick="window.open('https://github.com/MIKEINTOSHSYSTEMS/telebirr-php-payment-integration', '_blank')">GitHub Repository</a></li>
-                    <li><a href="#" onclick="window.open('<?php echo $company_url; ?>', '_blank')">MIKEINTOSH SYSTEMS</a></li>
+                    <li><a href="#" onclick="window.open('https://github.com/MIKEINTOSHSYSTEMS/telebirr-php-payment-integration', '_blank'); return false;">GitHub Repository</a></li>
+                    <li><a href="#" onclick="window.open('<?php echo $company_url; ?>', '_blank'); return false;">MIKEINTOSH SYSTEMS</a></li>
                     <li><a href="test-autoload.php">Test Autoload</a></li>
                     <li><a href="test-token.php">Test Token</a></li>
                 </ul>
@@ -50,8 +51,8 @@ $current_year = date('Y');
                 All rights reserved. Designed and Developed with ❤️ by MIKEINTOSH SYSTEMS
             </div>
             <div class="footer-links">
-                <a href="#" onclick="window.open('<?php echo $github_repo; ?>', '_blank')">GitHub</a>
-                <a href="#" onclick="window.open('<?php echo $company_url; ?>', '_blank')">Website</a>
+                <a href="#" onclick="window.open('<?php echo $github_repo; ?>', '_blank'); return false;">GitHub</a>
+                <a href="#" onclick="window.open('<?php echo $company_url; ?>', '_blank'); return false;">Website</a>
                 <a href="LICENSE">License</a>
             </div>
         </div>
@@ -61,36 +62,52 @@ $current_year = date('Y');
 <!-- JavaScript -->
 <script src="assets/js/payment.js"></script>
 
-<!-- Theme Toggle Script -->
+<!-- Theme Toggle Script - Single source of truth -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const themeToggle = document.getElementById('themeToggle');
-        const sunIcon = document.querySelector('.sun-icon');
-        const moonIcon = document.querySelector('.moon-icon');
-        const htmlElement = document.documentElement;
+    (function() {
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const sunIcon = document.querySelector('.sun-icon');
+            const moonIcon = document.querySelector('.moon-icon');
+            const htmlElement = document.documentElement;
 
-        function setTheme(theme) {
-            htmlElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-
-            if (theme === 'dark') {
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                sunIcon.style.display = 'block';
-                moonIcon.style.display = 'none';
+            // Update icons based on current theme
+            function updateIcons(theme) {
+                if (theme === 'dark') {
+                    sunIcon.style.display = 'none';
+                    moonIcon.style.display = 'block';
+                } else {
+                    sunIcon.style.display = 'block';
+                    moonIcon.style.display = 'none';
+                }
             }
-        }
 
-        // Initialize icons based on current theme
-        const currentTheme = htmlElement.getAttribute('data-theme');
-        setTheme(currentTheme);
+            // Set theme function
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                updateIcons(theme);
+            }
 
-        themeToggle.addEventListener('click', function() {
-            const newTheme = htmlElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            setTheme(newTheme);
+            // Initialize icons based on current theme
+            const currentTheme = htmlElement.getAttribute('data-theme') || 'dark';
+            updateIcons(currentTheme);
+
+            // Toggle theme on button click
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const newTheme = htmlElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    setTheme(newTheme);
+
+                    // Show notification
+                    if (window.TelebirrPayment && window.TelebirrPayment.showNotification) {
+                        window.TelebirrPayment.showNotification(`Switched to ${newTheme} mode`, 'info');
+                    }
+                });
+            }
         });
-    });
+    })();
 </script>
 </body>
 

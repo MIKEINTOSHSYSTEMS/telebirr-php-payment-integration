@@ -72,7 +72,7 @@ try {
 
 <div class="container">
     <header class="page-header">
-        <h1>🇪🇹 Telebirr Payment Gateway</h1>
+        <h1>Telebirr Payment Gateway</h1>
         <p class="subtitle">Complete C2B Web Payment Integration Demo for PHP</p>
     </header>
 

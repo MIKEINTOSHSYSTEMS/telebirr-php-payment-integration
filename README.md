@@ -238,10 +238,10 @@ chmod 644 .env
 |----------|-------------|---------|----------|
 | `BASE_URL` | API base URL (test/production) | `https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway` | Yes |
 | `WEB_BASE_URL` | Web checkout base URL | `https://developerportal.ethiotelebirr.et:38443/payment/web/paygate?` | Yes |
-| `FABRIC_APP_ID` | Your fabric app ID | `c4182ef8-9249-458a-985e-06d191f4d505` | Yes |
-| `APP_SECRET` | Your app secret | `fad0f06383c6297f545876694b974599` | Yes |
-| `MERCHANT_APP_ID` | Your merchant app ID | `1579902121088002` | Yes |
-| `MERCHANT_CODE` | Your merchant short code | `703600` | Yes |
+| `FABRIC_APP_ID` | Your fabric app ID | `**************************` | Yes |
+| `APP_SECRET` | Your app secret | `**************************` | Yes |
+| `MERCHANT_APP_ID` | Your merchant app ID | `**************************` | Yes |
+| `MERCHANT_CODE` | Your merchant short code | `*********` | Yes |
 | `DEBUG_MODE` | Enable/disable debug mode | `true` or `false` | Yes |
 | `NOTIFY_URL` | Webhook notification URL | `https://your-domain.com/checkout.php` | Yes |
 | `REDIRECT_URL` | Success redirect URL | `https://your-domain.com/payment-success.php` | Yes |
@@ -700,10 +700,10 @@ php public/maintenance/clean-logs.php
 ### Test Credentials (Sandbox)
 
 ```
-FABRIC_APP_ID=c4182ef8-9249-458a-985e-06d191f4d505
-APP_SECRET=fad0f06383c6297f545876694b974599
-MERCHANT_APP_ID=1579902121088002
-MERCHANT_CODE=703600
+FABRIC_APP_ID=**************************
+APP_SECRET=**************************
+MERCHANT_APP_ID=**************************
+MERCHANT_CODE=********
 BASE_URL=https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway
 WEB_BASE_URL=https://developerportal.ethiotelebirr.et:38443/payment/web/paygate?
 ```

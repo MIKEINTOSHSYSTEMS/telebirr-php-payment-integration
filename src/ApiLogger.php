@@ -87,21 +87,20 @@ class ApiLogger
      * @param mixed $requestData Request data (array or string)
      * @param mixed $responseData Response data (array or string)
      * @param int $statusCode HTTP status code
-     * @param float $duration Request duration in seconds
      * @return bool Success status
      */
-    public function log($endpoint, $method, $requestData, $responseData, $statusCode, $duration = null)
+    public function log($endpoint, $method, $requestData, $responseData, $statusCode)
     {
         $success = true;
         
         // Log to file
         if ($this->logger) {
-            $this->logToFile($endpoint, $method, $requestData, $responseData, $statusCode, $duration);
+            $this->logToFile($endpoint, $method, $requestData, $responseData, $statusCode);
         }
         
         // Log to database
         if ($this->db) {
-            $dbSuccess = $this->logToDatabase($endpoint, $method, $requestData, $responseData, $statusCode, $duration);
+            $dbSuccess = $this->logToDatabase($endpoint, $method, $requestData, $responseData, $statusCode);
             $success = $success && $dbSuccess;
         }
         
@@ -116,9 +115,8 @@ class ApiLogger
      * @param mixed $requestData
      * @param mixed $responseData
      * @param int $statusCode
-     * @param float $duration
      */
-    private function logToFile($endpoint, $method, $requestData, $responseData, $statusCode, $duration = null)
+    private function logToFile($endpoint, $method, $requestData, $responseData, $statusCode)
     {
         $logMessage = sprintf(
             "API Call: %s %s - Status: %d",
@@ -126,10 +124,6 @@ class ApiLogger
             $endpoint,
             $statusCode
         );
-        
-        if ($duration !== null) {
-            $logMessage .= sprintf(" - Duration: %.4fs", $duration);
-        }
         
         if ($statusCode >= 200 && $statusCode < 300) {
             $this->logger->info($logMessage);
@@ -156,10 +150,9 @@ class ApiLogger
      * @param mixed $requestData
      * @param mixed $responseData
      * @param int $statusCode
-     * @param float $duration
      * @return bool
      */
-    private function logToDatabase($endpoint, $method, $requestData, $responseData, $statusCode, $duration = null)
+    private function logToDatabase($endpoint, $method, $requestData, $responseData, $statusCode)
     {
         if (!$this->db) {
             return false;
@@ -179,7 +172,6 @@ class ApiLogger
                 request_data, 
                 response_data, 
                 status_code, 
-                duration,
                 ip_address, 
                 user_agent,
                 created_at
@@ -189,7 +181,6 @@ class ApiLogger
                 :request_data, 
                 :response_data, 
                 :status_code, 
-                :duration,
                 :ip_address, 
                 :user_agent,
                 NOW()
@@ -203,20 +194,12 @@ class ApiLogger
                 ':request_data' => $this->formatData($requestData),
                 ':response_data' => $this->formatData($responseData),
                 ':status_code' => $statusCode,
-                ':duration' => $duration,
                 ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
                 ':user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null
             ]);
             
-            if ($result) {
-                $this->logToFile(
-                    'Database',
-                    'INSERT',
-                    ['log_id' => $this->db->lastInsertId()],
-                    'API log stored successfully',
-                    200,
-                    null
-                );
+            if ($result && $this->logger) {
+                $this->logger->debug("API call logged to database with ID: " . $this->db->lastInsertId());
             }
             
             return $result;
@@ -225,26 +208,12 @@ class ApiLogger
             if ($this->logger) {
                 $this->logger->error("Failed to log API call to database: " . $e->getMessage());
             }
-            
-            // Try to create table if it doesn't exist
-            if (strpos($e->getMessage(), "Table '.*\.api_logs' doesn't exist") !== false) {
-                try {
-                    $this->createApiLogsTable();
-                    // Retry the insert
-                    return $this->logToDatabase($endpoint, $method, $requestData, $responseData, $statusCode, $duration);
-                } catch (\Exception $retryException) {
-                    if ($this->logger) {
-                        $this->logger->error("Failed to create api_logs table: " . $retryException->getMessage());
-                    }
-                }
-            }
-            
             return false;
         }
     }
     
     /**
-     * Create api_logs table if it doesn't exist
+     * Create api_logs table if it doesn't exist (matching your schema)
      * 
      * @return bool
      */
@@ -262,12 +231,10 @@ class ApiLogger
                 request_data TEXT,
                 response_data TEXT,
                 status_code INT,
-                duration DECIMAL(10,4),
                 ip_address VARCHAR(45),
                 user_agent TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_endpoint (endpoint),
-                INDEX idx_status_code (status_code),
                 INDEX idx_created (created_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
             

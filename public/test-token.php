@@ -3,6 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/includes/header.php';
 
 use Telebirr\ApplyFabricToken;
 
@@ -73,7 +74,7 @@ if ($response) {
     }
 }
 
-curl_close($ch);
+unset($ch);
 
 // Test with your ApplyFabricToken class
 echo "<h2>Testing ApplyFabricToken Class</h2>";
@@ -122,3 +123,6 @@ if ($connection) {
         }
     }
 }
+
+require_once __DIR__ . '/includes/footer.php';
+?>

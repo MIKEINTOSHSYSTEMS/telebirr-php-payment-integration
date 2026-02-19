@@ -21,6 +21,7 @@ class TelebirrPayment
     private $refundOrder;
     private $notifyHandler;
     private $logger;
+    private $apiLogger;
     private $db;
     
     /**
@@ -37,60 +38,66 @@ class TelebirrPayment
         } else {
             $this->config = require __DIR__ . '/../config/config.php';
         }
-        
+
         // Set timezone
         date_default_timezone_set($this->config['app']['timezone'] ?? 'Africa/Addis_Ababa');
-        
+
         // Initialize logger
         $this->logger = $this->initLogger();
-        
+
         // Initialize database (try multiple methods)
         $this->db = $db ?: $this->initDatabase();
-        
+
+        // Initialize API Logger (without duration parameter)
+        $this->apiLogger = new ApiLogger($this->db, $this->logger, $this->config);
+
         // Log database status
         if ($this->db) {
             $this->logger->info("Database connected successfully");
         } else {
             $this->logger->warning("Database not connected - transactions will not be persisted");
         }
-        
+
         // Initialize signer and verifier
         $this->signer = new Signer(
             $this->config['keys']['private_key'] ?? '',
             $this->logger
         );
-        
+
         $this->verifier = new SignatureVerifier(
             $this->config['keys']['public_key'] ?? '',
             $this->logger
         );
-        
-        $this->applyToken = new ApplyFabricToken($this->config, $this->logger);
-        
+
+        $this->applyToken = new ApplyFabricToken($this->config, $this->logger, $this->apiLogger);
+
         $this->createOrder = new CreateOrder(
             $this->config,
             $this->applyToken,
             $this->signer,
             $this->logger,
-            $this->db
+            $this->db,
+            $this->apiLogger
         );
-        
+
         $this->queryOrder = new QueryOrder(
             $this->config,
             $this->applyToken,
             $this->signer,
             $this->logger,
-            $this->db
+            $this->db,
+            $this->apiLogger
         );
-        
+
         $this->refundOrder = new RefundOrder(
             $this->config,
             $this->applyToken,
             $this->signer,
             $this->logger,
-            $this->db
+            $this->db,
+            $this->apiLogger
         );
-        
+
         $this->notifyHandler = new NotifyHandler(
             $this->config,
             $this->verifier,

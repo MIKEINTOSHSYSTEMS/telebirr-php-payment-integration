@@ -1,7 +1,8 @@
 <?php
 namespace Telebirr;
 
-use phpseclib\Crypt\RSA;
+use phpseclib3\Crypt\PublicKeyLoader;
+use phpseclib3\Crypt\RSA;
 
 /**
  * Signature Helper for Telebirr API
@@ -9,12 +10,11 @@ use phpseclib\Crypt\RSA;
  */
 class SignatureHelper
 {
-    private $privateKey;
-    private $publicKey;
+    private string $privateKey;
+    private ?string $publicKey;
     private $logger;
-    
-    // Fields excluded from signature (as per Telebirr documentation)
-    private $excludeFields = [
+
+    private array $excludeFields = [
         'sign',
         'sign_type',
         'header',
@@ -23,224 +23,136 @@ class SignatureHelper
         'raw_request',
         'wallet_reference_data'
     ];
-    
-    public function __construct($privateKey, $publicKey = null, $logger = null)
+
+    public function __construct(string $privateKey, ?string $publicKey = null, $logger = null)
     {
         $this->privateKey = $privateKey;
         $this->publicKey = $publicKey;
         $this->logger = $logger;
     }
-    
+
     /**
-     * Sign request object exactly as per Telebirr documentation
-     * 
-     * @param array $requestObject The request data to sign
-     * @return string Base64 encoded signature
+     * Sign request object according to Telebirr spec
      */
-    public function signRequest($requestObject)
+    public function signRequest(array $requestObject): string
     {
-        try {
-            // Collect all parameters to be signed
-            $params = [];
-            
-            // Add main request parameters (including sign_type but excluding biz_content)
-            foreach ($requestObject as $key => $value) {
-                if ($key === 'biz_content' || in_array($key, $this->excludeFields)) {
-                    continue;
-                }
-                if (!is_array($value) && !is_object($value)) {
-                    // Include sign_type in signature
-                    $params[$key] = $value;
-                }
+        $params = [];
+
+        // Main request parameters
+        foreach ($requestObject as $key => $value) {
+            if ($key === 'biz_content' || in_array($key, $this->excludeFields, true)) continue;
+            if (!is_array($value) && !is_object($value)) {
+                $params[$key] = $value;
             }
-            
-            // Add biz_content parameters
-            if (isset($requestObject['biz_content']) && is_array($requestObject['biz_content'])) {
-                foreach ($requestObject['biz_content'] as $key => $value) {
-                    if (!in_array($key, $this->excludeFields) && !is_array($value) && !is_object($value)) {
-                        // Skip empty values
-                        if ($value !== null && $value !== '') {
-                            $params[$key] = $value;
-                        }
+        }
+
+        // biz_content parameters
+        if (isset($requestObject['biz_content']) && is_array($requestObject['biz_content'])) {
+            foreach ($requestObject['biz_content'] as $key => $value) {
+                if (!in_array($key, $this->excludeFields, true) && !is_array($value) && !is_object($value)) {
+                    if ($value !== null && $value !== '') {
+                        $params[$key] = $value;
                     }
                 }
             }
-            
-            // Sort parameters alphabetically by key
-            ksort($params);
-            
-            // Build signature string: key1=value1&key2=value2&...
-            $signParts = [];
-            foreach ($params as $key => $value) {
-                // Ensure value is string
-                $value = (string)$value;
-                $signParts[] = $key . '=' . $value;
-            }
-            $signString = implode('&', $signParts);
-            
-            $this->log("Signature String: " . $signString, 'DEBUG');
-            
-            // Sign the string
-            $signature = $this->signWithRSA($signString);
-            
-            $this->log("Generated Signature: " . $signature, 'DEBUG');
-            
-            return $signature;
-            
-        } catch (\Exception $e) {
-            $this->log("Signature Error: " . $e->getMessage(), 'ERROR');
-            throw $e;
         }
+
+        ksort($params);
+
+        $signParts = [];
+        foreach ($params as $key => $value) {
+            $signParts[] = $key . '=' . (string)$value;
+        }
+
+        $signString = implode('&', $signParts);
+
+        $this->log("Signature String: $signString", 'DEBUG');
+
+        return $this->signWithRSA($signString);
     }
-    
+
     /**
-     * Sign raw string with RSA private key using SHA256withRSA
-     * 
-     * @param string $data Data to sign
-     * @return string Base64 encoded signature
+     * Sign string using RSA PSS + SHA256
      */
-    public function signWithRSA($data)
+    public function signWithRSA(string $data): string
     {
         try {
-            // Initialize RSA
-            $rsa = new RSA();
-            
-            // Clean private key
-            $privateKey = $this->cleanPrivateKey($this->privateKey);
-            
-            // Load private key
-            if (!$rsa->loadKey($privateKey)) {
-                throw new \Exception("Failed to load private key");
+            $privateKey = PublicKeyLoader::loadPrivateKey($this->privateKey);
+
+            if (!$privateKey instanceof RSA\PrivateKey) {
+                throw new \RuntimeException("Invalid private key provided");
             }
-            
-            // Set encryption mode and hash
-            $rsa->setEncryptionMode(RSA::ENCRYPTION_PKCS1);
-            $rsa->setSignatureMode(RSA::SIGNATURE_PKCS1);
-            $rsa->setHash("sha256");
-            $rsa->setMGFHash("sha256");
-            
-            // Sign the data
-            $signature = $rsa->sign($data);
-            
-            // Return base64 encoded signature
+
+            // Set padding and hash
+            $privateKey = $privateKey
+                ->withPadding(RSA::SIGNATURE_PSS)
+                ->withHash('sha256')
+                ->withMGFHash('sha256');
+
+            $signature = $privateKey->sign($data);
+
+            $this->log("Generated Signature: " . base64_encode($signature), 'DEBUG');
+
             return base64_encode($signature);
-            
         } catch (\Exception $e) {
             $this->log("RSA Sign Error: " . $e->getMessage(), 'ERROR');
             throw $e;
         }
     }
-    
+
     /**
-     * Clean private key by removing headers, footers, and whitespace
-     * 
-     * @param string $key
-     * @return string
+     * Verify a signature with RSA PSS + SHA256
      */
-    private function cleanPrivateKey($key)
+    public function verifySignature(string $data, string $signature): bool
     {
-        // Remove headers and footers
-        $key = preg_replace('/-----BEGIN PRIVATE KEY-----/', '', $key);
-        $key = preg_replace('/-----END PRIVATE KEY-----/', '', $key);
-        $key = preg_replace('/-----BEGIN RSA PRIVATE KEY-----/', '', $key);
-        $key = preg_replace('/-----END RSA PRIVATE KEY-----/', '', $key);
-        
-        // Remove all whitespace
-        $key = preg_replace('/\s+/', '', $key);
-        
-        // Reconstruct with proper PEM format
-        $key = chunk_split($key, 64, "\n");
-        $key = "-----BEGIN PRIVATE KEY-----\n" . $key . "-----END PRIVATE KEY-----";
-        
-        return $key;
-    }
-    
-    /**
-     * Generate signature for raw request (checkout URL)
-     * 
-     * @param array $params
-     * @return string
-     */
-    public function generateRawRequestSignature($params)
-    {
-        // Sort parameters alphabetically
-        ksort($params);
-        
-        // Build signature string
-        $signParts = [];
-        foreach ($params as $key => $value) {
-            if (!in_array($key, ['sign', 'sign_type'])) {
-                $signParts[] = $key . '=' . $value;
-            }
+        if (!$this->publicKey) {
+            $this->log("Public key not set for verification", 'ERROR');
+            return false;
         }
-        $signString = implode('&', $signParts);
-        
-        return $this->signWithRSA($signString);
-    }
-    
-    /**
-     * Verify signature
-     * 
-     * @param string $data Original data
-     * @param string $signature Base64 encoded signature
-     * @return bool
-     */
-    public function verifySignature($data, $signature)
-    {
+
         try {
-            $rsa = new RSA();
-            
-            // Clean public key
-            $publicKey = $this->cleanPublicKey($this->publicKey);
-            
-            // Load public key
-            if (!$rsa->loadKey($publicKey)) {
-                throw new \Exception("Failed to load public key");
+            $publicKey = PublicKeyLoader::loadPublicKey($this->publicKey);
+
+            if (!$publicKey instanceof RSA\PublicKey) {
+                $this->log("Invalid public key provided", 'ERROR');
+                return false;
             }
-            
-            // Set verification mode
-            $rsa->setSignatureMode(RSA::SIGNATURE_PKCS1);
-            $rsa->setHash("sha256");
-            $rsa->setMGFHash("sha256");
-            
-            // Verify signature
-            return $rsa->verify($data, base64_decode($signature));
-            
+
+            $publicKey = $publicKey
+                ->withPadding(RSA::SIGNATURE_PSS)
+                ->withHash('sha256')
+                ->withMGFHash('sha256');
+
+            return $publicKey->verify($data, base64_decode($signature));
         } catch (\Exception $e) {
             $this->log("Verification Error: " . $e->getMessage(), 'ERROR');
             return false;
         }
     }
-    
+
     /**
-     * Clean public key
-     * 
-     * @param string $key
-     * @return string
+     * Generate signature for raw request array
      */
-    private function cleanPublicKey($key)
+    public function generateRawRequestSignature(array $params): string
     {
-        // Remove headers and footers
-        $key = preg_replace('/-----BEGIN PUBLIC KEY-----/', '', $key);
-        $key = preg_replace('/-----END PUBLIC KEY-----/', '', $key);
-        
-        // Remove all whitespace
-        $key = preg_replace('/\s+/', '', $key);
-        
-        // Reconstruct with proper PEM format
-        $key = chunk_split($key, 64, "\n");
-        $key = "-----BEGIN PUBLIC KEY-----\n" . $key . "-----END PUBLIC KEY-----";
-        
-        return $key;
+        ksort($params);
+        $signParts = [];
+        foreach ($params as $key => $value) {
+            if (!in_array($key, ['sign', 'sign_type'], true)) {
+                $signParts[] = $key . '=' . (string)$value;
+            }
+        }
+        $signString = implode('&', $signParts);
+        return $this->signWithRSA($signString);
     }
-    
+
     /**
-     * Log message
+     * Simple logging
      */
-    private function log($message, $level = 'INFO')
+    private function log(string $message, string $level = 'INFO'): void
     {
-        if ($this->logger) {
-            $this->logger->$level($message);
+        if ($this->logger && method_exists($this->logger, strtolower($level))) {
+            $this->logger->{strtolower($level)}($message);
         } else {
             error_log("[Telebirr][$level] $message");
         }

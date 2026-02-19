@@ -2,6 +2,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+require_once __DIR__ . '/includes/header.php';
+
 echo "<h1>Testing Autoloader</h1>";
 
 $autoloadPath = __DIR__ . '/../vendor/autoload.php';
@@ -20,3 +22,6 @@ if (file_exists($autoloadPath)) {
     echo "❌ Autoload file not found!<br>";
     echo "Please run: composer install<br>";
 }
+
+require_once __DIR__ . '/includes/footer.php';
+?>

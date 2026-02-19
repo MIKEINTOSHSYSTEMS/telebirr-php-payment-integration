@@ -32,23 +32,27 @@ Complete, production-ready Telebirr payment integration solution for PHP applica
 1. Clone or download this repository
 
 2. Install dependencies:
+
 ```bash
 composer install
 ```
 
-3. Configure environment:
+3.Configure environment:
+
 ```bash
 cp .env.example .env
 # Edit .env with your credentials
 ```
 
-4. Set up database (optional):
+4.Set up database (optional):
+
 ```bash
 # Import the database schema
 mysql -u username -p database_name < database.sql
 ```
 
-5. Ensure proper permissions:
+5.Ensure proper permissions:
+
 ```bash
 chmod 755 logs/
 chmod 644 config/keys/*.pem
@@ -59,9 +63,9 @@ chmod 644 config/keys/*.pem
 ### Environment Variables
 
 | Variable | Description | Example |
-|----------|-------------|---------|
-| BASE_URL | API base URL (test/production) | https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway |
-| WEB_BASE_URL | Web checkout base URL | https://developerportal.ethiotelebirr.et:38443/payment/web/paygate? |
+| ---------- | ------------- | --------- |
+| BASE_URL | API base URL (test/production) | <https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway> |
+| WEB_BASE_URL | Web checkout base URL | <https://developerportal.ethiotelebirr.et:38443/payment/web/paygate?> |
 | FABRIC_APP_ID | Your fabric app ID | **************************************** |
 | APP_SECRET | Your app secret | **************************************** |
 | MERCHANT_APP_ID | Your merchant app ID | ******** |
@@ -70,8 +74,8 @@ chmod 644 config/keys/*.pem
 ### RSA Keys
 
 Place your private and public keys in `config/keys/` directory:
-- `private_key.pem` - Your private key (keep secure)
-- `public_key.pem` - Your public key (share with Telebirr)
+-`private_key.pem` - Your private key (keep secure)
+-`public_key.pem` - Your public key (share with Telebirr)
 
 ## Usage
 
@@ -205,10 +209,10 @@ try {
 ## Logging
 
 Logs are written to `logs/payment.log` with different levels:
-- ERROR: Critical errors
-- WARNING: Non-critical issues
-- INFO: General information
-- DEBUG: Detailed debugging information
+-ERROR: Critical errors
+-WARNING: Non-critical issues
+-INFO: General information
+-DEBUG: Detailed debugging information
 
 ## Security Considerations
 
@@ -276,9 +280,9 @@ For testing, use the provided credentials:
 ## Support
 
 For issues and questions:
-- Check the [official Telebirr documentation](https://developer.ethiotelecom.et/docs/category/h5-c2b-web-payment-integration)
-- Contact Ethio Telecom support
-- Open an issue on GitHub
+-Check the [official Telebirr documentation](https://developer.ethiotelecom.et/docs/category/h5-c2b-web-payment-integration)
+-Contact Ethio Telecom support
+-Open an issue on GitHub
 
 ## License
 
@@ -293,12 +297,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Changelog
 
 ### Version 1.0.0
+
 - Initial release
 - Complete C2B payment integration
 - Demo application
 - Database support
 - Comprehensive documentation
-
 
 ## Summary
 
@@ -340,5 +344,5 @@ This complete Telebirr payment integration solution includes:
    - Troubleshooting tips
    - Security considerations
 
+````markdown
 
-```
